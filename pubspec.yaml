@@ -1,7 +1,9 @@
 name: in_app_mcp
-description: "A new Flutter plugin project."
+description: "In-app MCP-style tool execution runtime for Flutter with policy controls."
 version: 0.0.1
-homepage:
+homepage: https://github.com/phanbaohuy96/in-app-mcp
+repository: https://github.com/phanbaohuy96/in-app-mcp
+issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
 
 environment:
   sdk: ^3.10.8

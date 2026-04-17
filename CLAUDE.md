@@ -105,6 +105,6 @@ The package is intentionally split into runtime layers in `lib/src`:
 
 For deeper details, prefer these documents:
 - `README.md`
-- `docs/architecture.md`
-- `docs/api.md`
-- `docs/example_workflow.md`
+- `doc/architecture.md`
+- `doc/api.md`
+- `doc/example_workflow.md`

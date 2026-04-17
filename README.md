@@ -172,6 +172,6 @@ Planned next steps:
 ## Documentation
 
 See:
-- `docs/architecture.md`
-- `docs/api.md`
-- `docs/example_workflow.md`
+- `doc/architecture.md`
+- `doc/api.md`
+- `doc/example_workflow.md`
