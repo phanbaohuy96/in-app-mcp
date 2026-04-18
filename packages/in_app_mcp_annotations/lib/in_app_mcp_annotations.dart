@@ -46,7 +46,9 @@ class McpTool {
   /// included in the JSON schema passed to LLM adapters.
   final String description;
 
-  /// Whether the generated `ToolDefinition` should accept arguments that
-  /// aren't declared in the annotated function's signature.
+  /// Forwarded verbatim to `ToolDefinition.allowAdditionalArguments` on
+  /// the generated definition. Defaults to `false` here (stricter than the
+  /// core's `true`) because an annotated function's parameter list is
+  /// expected to be exhaustive.
   final bool allowAdditionalArguments;
 }

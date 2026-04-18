@@ -44,7 +44,7 @@ Add dependency:
 
 ```yaml
 dependencies:
-  in_app_mcp: ^0.0.1
+  in_app_mcp: ^1.0.1
 ```
 
 Then run:

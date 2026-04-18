@@ -2,7 +2,7 @@
 
 - Convert `in_app_mcp` from a Flutter plugin to a pure Flutter package. The plugin scaffolding from `flutter create --template=plugin` (`android/`, `ios/`, `lib/in_app_mcp_method_channel.dart`, `lib/in_app_mcp_platform_interface.dart`) was unused — `lib/in_app_mcp.dart` never called into it. The package now supports every platform Flutter targets out of the box.
 - Drop unused `plugin_platform_interface` dependency.
-- Add dartdoc comments across the public API (`InAppMcp`, `ToolCall`, `ToolDefinition`, `ToolArgType`, `ToolResult`, `ToolErrorCode`, `ToolPolicy`, `PolicyDecision`, `PolicyStore`, `InMemoryPolicyStore`, `ToolRegistry`, `InvocationEngine`). No behavioural changes.
+- Add dartdoc comments across the public API (`InAppMcp`, `ToolCall`, `ToolDefinition`, `ToolArgType`, `ToolResult`, `ToolErrorCode`, `ToolPolicy`, `PolicyDecision`, `PolicyStore`, `InMemoryPolicyStore`, `ToolRegistry`, `RegisteredTool`, `InvocationEngine`). No behavioural changes.
 
 ## 1.0.0
 

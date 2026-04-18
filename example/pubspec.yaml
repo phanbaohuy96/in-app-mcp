@@ -1,5 +1,5 @@
 name: in_app_mcp_example
-description: "Demonstrates how to use the in_app_mcp plugin."
+description: "Demonstrates how to use the in_app_mcp package."
 version: 1.0.0+1
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -56,16 +56,14 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
-# `in_app_mcp_gen`'s published pubspec declares
-# `in_app_mcp_annotations: ^1.0.0` (pub). This override forces the transitive
-# dep to resolve to the local sibling source so edits in
-# `packages/in_app_mcp_annotations` flow through immediately and a single
-# canonical `McpTool` type is used.
+# `in_app_mcp_gen`'s published pubspec declares a pub-hosted dep on
+# `in_app_mcp_annotations`. Without this override, pub would try to resolve
+# the direct path dep on annotations (above) alongside gen's transitive
+# hosted dep and fail. Forcing annotations to the local sibling keeps a
+# single canonical `McpTool` type in the example's dep graph.
 dependency_overrides:
   in_app_mcp_annotations:
     path: ../packages/in_app_mcp_annotations
-  in_app_mcp_gen:
-    path: ../packages/in_app_mcp_gen
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

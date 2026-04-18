@@ -30,7 +30,6 @@ flutter test test
 ### Run a single package test file
 ```bash
 flutter test test/in_app_mcp_test.dart
-flutter test test/in_app_mcp_method_channel_test.dart
 ```
 
 ### Run a single test by name

@@ -66,13 +66,12 @@ class InAppMcp {
     _registry.registerTool(definition: definition, handler: handler);
   }
 
-  /// Unmodifiable snapshot of every currently-registered [ToolDefinition].
+  /// Fixed-length snapshot of every currently-registered [ToolDefinition].
   List<ToolDefinition> get tools => _registry.listTools();
 
-  /// Returns an OpenAI-function-calling-style payload listing every
-  /// registered tool's JSON schema under the `tools` key.
-  ///
-  /// Useful for feeding the tool catalog to an LLM adapter in a single call.
+  /// Returns `{"tools": [...]}` where each entry is the JSON schema from
+  /// [ToolDefinition.toJsonSchema]. Useful for feeding the full tool
+  /// catalog to an LLM adapter in a single call.
   Map<String, dynamic> toolsSchemaJson() {
     return {
       'tools': [
