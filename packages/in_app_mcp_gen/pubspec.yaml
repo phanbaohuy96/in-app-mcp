@@ -1,6 +1,6 @@
 name: in_app_mcp_gen
-description: Build-runner code generator for in_app_mcp. Produces ToolDefinition and typed handler adapters from @McpTool annotations.
-version: 1.0.1
+description: Build-runner code generator for in_app_mcp. Emits ToolDefinition and typed handler / previewer / undoer adapters from @McpTool, @McpToolPreview, and @McpToolUndo annotations.
+version: 1.1.0
 homepage: https://github.com/phanbaohuy96/in-app-mcp
 repository: https://github.com/phanbaohuy96/in-app-mcp
 issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
@@ -14,7 +14,7 @@ dependencies:
   # 4.x is adopted we can migrate to the Element2 model and widen this.
   analyzer: ">=6.5.0 <8.0.0"
   build: ^2.4.0
-  in_app_mcp_annotations: ^1.0.0
+  in_app_mcp_annotations: ^1.1.0
   source_gen: ">=1.5.0 <3.0.0"
 
 dev_dependencies:
