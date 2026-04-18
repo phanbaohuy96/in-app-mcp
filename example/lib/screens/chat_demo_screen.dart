@@ -108,6 +108,61 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
     };
   }
 
+  IconData _toolIcon(String toolName) {
+    return switch (toolName) {
+      'schedule_weekday_alarm' => Icons.alarm,
+      'create_calendar_event' => Icons.event,
+      'open_map_directions' => Icons.directions,
+      'compose_email_draft' => Icons.mail_outline,
+      'echo' => Icons.repeat,
+      _ => Icons.extension,
+    };
+  }
+
+  Color _statusColor(_InlineToolStatus status, ColorScheme scheme) {
+    return switch (status) {
+      _InlineToolStatus.pending => Colors.amber.shade700,
+      _InlineToolStatus.running => scheme.primary,
+      _InlineToolStatus.succeeded => Colors.green.shade600,
+      _InlineToolStatus.failed => scheme.error,
+      _InlineToolStatus.canceled => scheme.outline,
+    };
+  }
+
+  IconData _statusIcon(_InlineToolStatus status) {
+    return switch (status) {
+      _InlineToolStatus.pending => Icons.schedule,
+      _InlineToolStatus.running => Icons.autorenew,
+      _InlineToolStatus.succeeded => Icons.check_circle,
+      _InlineToolStatus.failed => Icons.error,
+      _InlineToolStatus.canceled => Icons.cancel,
+    };
+  }
+
+  Color _policyColor(PolicyDecision decision, ColorScheme scheme) {
+    return switch (decision) {
+      PolicyDecision.allow => Colors.green.shade700,
+      PolicyDecision.requireConfirmation => Colors.amber.shade800,
+      PolicyDecision.deny => scheme.error,
+    };
+  }
+
+  String _formatArgValue(Object? value) {
+    if (value == null) return 'null';
+    if (value is String) return '"$value"';
+    if (value is bool || value is num) return value.toString();
+    if (value is List) {
+      return '[${value.map(_formatArgValue).join(', ')}]';
+    }
+    if (value is Map) {
+      final entries = value.entries
+          .map((e) => '${e.key}: ${_formatArgValue(e.value)}')
+          .join(', ');
+      return '{$entries}';
+    }
+    return value.toString();
+  }
+
   Future<void> _run() async {
     if (_running) {
       return;
@@ -212,6 +267,7 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
               ? _InlineToolStatus.succeeded
               : _InlineToolStatus.failed,
           resultJson: resultJson,
+          result: result,
         );
       });
     } catch (e) {
@@ -219,15 +275,15 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
         return;
       }
 
-      final errorJson = _prettyJson.convert(
-        ToolResult.fail('execution_failed', e.toString()).toJson(),
-      );
+      final errorResult = ToolResult.fail('execution_failed', e.toString());
+      final errorJson = _prettyJson.convert(errorResult.toJson());
 
       setState(() {
         _result = errorJson;
         _inlineCalls[callId] = current.copyWith(
           status: _InlineToolStatus.failed,
           resultJson: errorJson,
+          result: errorResult,
         );
       });
     }
@@ -252,50 +308,98 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
   Widget _buildInlineToolCard(_InlineToolCallState state) {
     final call = state.call;
     final callId = call.id;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final canRun =
         state.status == _InlineToolStatus.pending &&
         state.policyDecision != PolicyDecision.deny;
     final canCancel = state.status == _InlineToolStatus.pending;
+    final statusColor = _statusColor(state.status, scheme);
+    final policyColor = _policyColor(state.policyDecision, scheme);
+    final result = state.result;
 
     return Container(
       key: ValueKey('inline-tool-call-card-$callId'),
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            call.toolName,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _toolIcon(call.toolName),
+                  size: 20,
+                  color: scheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      call.toolName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      state.toolDescription,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _StatusChip(
+                keyValue: ValueKey('inline-tool-status-$callId'),
+                icon: _statusIcon(state.status),
+                label: _statusLabel(state.status),
+                color: statusColor,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(state.toolDescription),
-          const SizedBox(height: 6),
-          Text(
-            'Policy: ${_policyLabel(state.policyDecision)}',
-            key: ValueKey('inline-tool-policy-$callId'),
+          const SizedBox(height: 12),
+          _PolicyChip(
+            keyValue: ValueKey('inline-tool-policy-$callId'),
+            label: _policyLabel(state.policyDecision),
+            color: policyColor,
           ),
-          Text(
-            'Status: ${_statusLabel(state.status)}',
-            key: ValueKey('inline-tool-status-$callId'),
-          ),
-          const SizedBox(height: 6),
-          SelectableText(
-            state.argumentsJson,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-          const SizedBox(height: 8),
+          if (call.arguments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _SectionHeader(label: 'Arguments', scheme: scheme),
+            const SizedBox(height: 4),
+            ...call.arguments.entries.map(
+              (entry) => _KeyValueRow(
+                keyText: entry.key,
+                valueText: _formatArgValue(entry.value),
+                scheme: scheme,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
           Row(
             children: [
-              FilledButton.tonal(
+              FilledButton.icon(
                 key: ValueKey('inline-run-tool-call-button-$callId'),
                 onPressed: canRun ? () => _executeInlineToolCall(callId) : null,
-                child: const Text('Run'),
+                icon: const Icon(Icons.play_arrow, size: 18),
+                label: const Text('Run'),
               ),
               const SizedBox(width: 8),
               TextButton(
@@ -307,12 +411,42 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
               ),
             ],
           ),
-          if (state.resultJson != null) ...[
-            const SizedBox(height: 8),
-            SelectableText(
-              state.resultJson!,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          if (result != null) ...[
+            const SizedBox(height: 12),
+            Divider(height: 1, color: scheme.outlineVariant),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  result.success ? Icons.check_circle : Icons.error,
+                  color: result.success
+                      ? Colors.green.shade600
+                      : scheme.error,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    result.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            if (result.data.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _SectionHeader(label: 'Result', scheme: scheme),
+              const SizedBox(height: 4),
+              ...result.data.entries.map(
+                (entry) => _KeyValueRow(
+                  keyText: entry.key,
+                  valueText: _formatArgValue(entry.value),
+                  scheme: scheme,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -486,6 +620,7 @@ class _InlineToolCallState {
     required this.argumentsJson,
     this.status = _InlineToolStatus.pending,
     this.resultJson,
+    this.result,
   });
 
   final ToolCall call;
@@ -494,10 +629,12 @@ class _InlineToolCallState {
   final String argumentsJson;
   final _InlineToolStatus status;
   final String? resultJson;
+  final ToolResult? result;
 
   _InlineToolCallState copyWith({
     _InlineToolStatus? status,
     String? resultJson,
+    ToolResult? result,
   }) {
     return _InlineToolCallState(
       call: call,
@@ -506,6 +643,7 @@ class _InlineToolCallState {
       argumentsJson: argumentsJson,
       status: status ?? this.status,
       resultJson: resultJson ?? this.resultJson,
+      result: result ?? this.result,
     );
   }
 }
@@ -519,4 +657,143 @@ class _ChatMessage {
   final String text;
   final bool fromUser;
   final String? inlineToolCallId;
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.keyValue,
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final Key keyValue;
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: keyValue,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PolicyChip extends StatelessWidget {
+  const _PolicyChip({
+    required this.keyValue,
+    required this.label,
+    required this.color,
+  });
+
+  final Key keyValue;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: keyValue,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.shield_outlined, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, required this.scheme});
+
+  final String label;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+class _KeyValueRow extends StatelessWidget {
+  const _KeyValueRow({
+    required this.keyText,
+    required this.valueText,
+    required this.scheme,
+  });
+
+  final String keyText;
+  final String valueText;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: scheme.onSurface,
+          ),
+          children: [
+            TextSpan(
+              text: '$keyText: ',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextSpan(text: valueText),
+          ],
+        ),
+      ),
+    );
+  }
 }
