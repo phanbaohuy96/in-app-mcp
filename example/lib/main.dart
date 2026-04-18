@@ -13,6 +13,7 @@ import 'llm/mock_llm_adapter.dart';
 import 'model_manager/model_catalog_entry.dart';
 import 'model_manager/model_channel_client.dart';
 import 'model_manager/model_manager_controller.dart';
+import 'screens/audit_timeline_screen.dart';
 import 'screens/chat_demo_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -224,6 +225,18 @@ class _MyAppState extends State<MyApp> {
             appBar: AppBar(
               title: const Text('in_app_mcp example'),
               actions: [
+                IconButton(
+                  key: const ValueKey('open-audit-timeline-button'),
+                  icon: const Icon(Icons.history),
+                  tooltip: 'Audit timeline',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AuditTimelineScreen(mcp: _mcp),
+                      ),
+                    );
+                  },
+                ),
                 IconButton(
                   key: const ValueKey('open-settings-button'),
                   icon: const Icon(Icons.settings),

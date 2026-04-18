@@ -52,3 +52,41 @@ class McpTool {
   /// expected to be exhaustive.
   final bool allowAdditionalArguments;
 }
+
+/// Marks a top-level Dart function as a side-effect-free previewer for an
+/// `@McpTool`. The annotated function must return `Future<Preview>` and
+/// accept the same typed named parameters as the paired tool.
+///
+/// The generator emits a `<fn>Previewer(ToolCall)` adapter alongside the
+/// user-written typed function; wire it up via
+/// `InAppMcp.registerTool(previewer: <fn>Previewer, ...)`.
+///
+/// ```dart
+/// @McpToolPreview()
+/// Future<Preview> echoPreview({required String message}) async {
+///   return Preview(summary: 'Would echo: $message');
+/// }
+/// ```
+class McpToolPreview {
+  /// Creates an [McpToolPreview] annotation.
+  const McpToolPreview();
+}
+
+/// Marks a top-level Dart function as a reverse-effect handler for an
+/// `@McpTool`. The annotated function must return `Future<ToolResult>` and
+/// accept the same typed named parameters as the paired tool.
+///
+/// The generator emits a `<fn>Undoer(ToolCall, ToolResult)` adapter; wire it
+/// up via `InAppMcp.registerTool(undoer: <fn>Undoer, ...)`.
+///
+/// ```dart
+/// @McpToolUndo()
+/// Future<ToolResult> echoUndo({required String message}) async {
+///   // compensating action here
+///   return ToolResult.ok('reverted');
+/// }
+/// ```
+class McpToolUndo {
+  /// Creates an [McpToolUndo] annotation.
+  const McpToolUndo();
+}

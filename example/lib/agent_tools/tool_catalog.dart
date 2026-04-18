@@ -85,6 +85,8 @@ class ToolCatalog {
     mcp.registerTool(
       definition: scheduleWeekdayAlarmDefinition,
       handler: _scheduleTool.execute,
+      previewer: _scheduleTool.preview,
+      undoer: _scheduleTool.undo,
     );
     mcp.registerTool(
       definition: createCalendarEventDefinition,
@@ -101,6 +103,8 @@ class ToolCatalog {
     mcp.registerTool(
       definition: echoDefinition,
       handler: echoHandler,
+      previewer: echoPreviewPreviewer,
+      undoer: echoUndoUndoer,
     );
   }
 }

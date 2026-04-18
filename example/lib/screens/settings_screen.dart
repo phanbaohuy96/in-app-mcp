@@ -4,6 +4,7 @@ import 'package:in_app_mcp/in_app_mcp.dart';
 import '../model_manager/model_catalog_entry.dart';
 import '../model_manager/model_install_state.dart';
 import '../model_manager/model_manager_controller.dart';
+import 'settings_grants_screen.dart';
 import 'settings_policy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -61,6 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 12),
             SettingsPolicyScreen(mcp: widget.mcp, tools: widget.tools),
+            const SizedBox(height: 12),
+            SettingsGrantsScreen(mcp: widget.mcp),
           ],
         ),
       ),
