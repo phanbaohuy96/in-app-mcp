@@ -1,3 +1,5 @@
-## 0.0.1
+## 1.0.0
 
-- Initial release: `@McpTool` annotation consumed by `in_app_mcp_gen`.
+- Initial public release.
+- Exports `@McpTool` — annotate a top-level Dart function to make it discoverable by [`in_app_mcp_gen`](https://pub.dev/packages/in_app_mcp_gen), which emits a matching `ToolDefinition` and typed handler adapter for the [`in_app_mcp`](https://pub.dev/packages/in_app_mcp) runtime.
+- Zero runtime dependencies.

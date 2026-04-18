@@ -1,6 +1,6 @@
 name: in_app_mcp_gen
 description: Build-runner code generator for in_app_mcp. Produces ToolDefinition and typed handler adapters from @McpTool annotations.
-version: 0.0.1
+version: 1.0.0
 homepage: https://github.com/phanbaohuy96/in-app-mcp
 repository: https://github.com/phanbaohuy96/in-app-mcp
 issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
