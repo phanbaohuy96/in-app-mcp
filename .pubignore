@@ -1,0 +1,32 @@
+# Sibling packages are published to pub.dev separately; do not rebundle
+# their source inside the in_app_mcp tarball.
+packages/
+
+# Flutter / Dart build artifacts and caches.
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+/build/
+/coverage/
+pubspec.lock
+
+# Example-only large artifacts.
+example/model_cache/
+example/.env
+example/build/
+example/.dart_tool/
+example/pubspec.lock
+example/ios/Pods/
+example/ios/.symlinks/
+example/ios/Flutter/Flutter.framework
+example/ios/Flutter/Flutter.podspec
+example/ios/Flutter/flutter_export_environment.sh
+example/android/.gradle/
+example/android/app/build/
+example/.flutter-plugins
+example/.flutter-plugins-dependencies
+
+# Misc.
+.DS_Store
+*.iml
+*.log
