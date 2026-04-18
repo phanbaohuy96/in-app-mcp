@@ -2,6 +2,7 @@ import 'package:in_app_mcp/in_app_mcp.dart';
 
 import 'compose_email_draft_tool.dart';
 import 'create_calendar_event_tool.dart';
+import 'echo_tool.dart';
 import 'open_map_directions_tool.dart';
 import 'schedule_weekday_alarm_tool.dart';
 
@@ -77,6 +78,7 @@ class ToolCatalog {
     createCalendarEventDefinition,
     openMapDirectionsDefinition,
     composeEmailDraftDefinition,
+    echoDefinition,
   ];
 
   void register(InAppMcp mcp) {
@@ -95,6 +97,10 @@ class ToolCatalog {
     mcp.registerTool(
       definition: composeEmailDraftDefinition,
       handler: _emailTool.execute,
+    );
+    mcp.registerTool(
+      definition: echoDefinition,
+      handler: echoHandler,
     );
   }
 }

@@ -50,6 +50,20 @@ class MockLlmAdapter extends LlmAdapter {
       );
     }
 
+    if (normalized.contains('echo')) {
+      final remainder = userPrompt.replaceAll(
+        RegExp(r'^\s*echo[:\s]*', caseSensitive: false),
+        '',
+      );
+      final message = remainder.trim().isEmpty
+          ? 'hello from in_app_mcp'
+          : remainder.trim();
+      return LlmTurn(
+        message: 'I can echo that for you.',
+        toolCall: _call('echo', {'message': message, 'repeat': 2}),
+      );
+    }
+
     if (normalized.contains('alarm') || normalized.contains('wake')) {
       final isWeekdayRequest =
           normalized.contains('week') || normalized.contains('workday');

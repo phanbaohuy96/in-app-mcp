@@ -81,6 +81,72 @@ void main() {
       expect(result.data['ok'], true);
     });
 
+    test('serializes a JSON schema for a tool definition', () {
+      const definition = ToolDefinition(
+        name: 'schedule_weekday_alarm',
+        description: 'Set a repeating alarm.',
+        argumentTypes: {
+          'hour': ToolArgType.integer,
+          'weekdays': ToolArgType.array,
+          'label': ToolArgType.string,
+        },
+        requiredArguments: {'hour', 'weekdays'},
+        allowAdditionalArguments: false,
+      );
+
+      final schema = definition.toJsonSchema();
+
+      expect(schema['name'], 'schedule_weekday_alarm');
+      expect(schema['description'], 'Set a repeating alarm.');
+      final parameters = schema['parameters'] as Map<String, dynamic>;
+      expect(parameters['type'], 'object');
+      expect(parameters['additionalProperties'], isFalse);
+      expect(parameters['required'], ['hour', 'weekdays']);
+      final properties = parameters['properties'] as Map<String, dynamic>;
+      expect(properties['hour'], {'type': 'integer'});
+      expect(properties['weekdays'], {'type': 'array'});
+      expect(properties['label'], {'type': 'string'});
+    });
+
+    test('ToolArgType names match JSON Schema vocabulary', () {
+      // toJsonSchema relies on ToolArgType.name producing these exact strings.
+      // A rename of any enum value would silently break LLM tool schemas.
+      expect(ToolArgType.string.name, 'string');
+      expect(ToolArgType.integer.name, 'integer');
+      expect(ToolArgType.number.name, 'number');
+      expect(ToolArgType.boolean.name, 'boolean');
+      expect(ToolArgType.array.name, 'array');
+      expect(ToolArgType.object.name, 'object');
+    });
+
+    test('aggregates schemas for all registered tools', () {
+      final mcp = InAppMcp();
+      mcp.registerTool(
+        definition: const ToolDefinition(
+          name: 'a',
+          description: 'a tool',
+          argumentTypes: {'x': ToolArgType.integer},
+          requiredArguments: {'x'},
+          allowAdditionalArguments: false,
+        ),
+        handler: (call) async => ToolResult.ok('ok'),
+      );
+      mcp.registerTool(
+        definition: const ToolDefinition(
+          name: 'b',
+          description: 'b tool',
+          argumentTypes: {'y': ToolArgType.string},
+        ),
+        handler: (call) async => ToolResult.ok('ok'),
+      );
+
+      final schema = mcp.toolsSchemaJson();
+      final tools = schema['tools'] as List;
+      expect(tools, hasLength(2));
+      expect((tools[0] as Map)['name'], 'a');
+      expect((tools[1] as Map)['name'], 'b');
+    });
+
     test('validates argument schema', () async {
       final mcp = InAppMcp(defaultPolicy: ToolPolicy.auto);
       mcp.registerTool(

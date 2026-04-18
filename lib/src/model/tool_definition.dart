@@ -57,4 +57,22 @@ class ToolDefinition {
       ToolArgType.object => value is Map,
     };
   }
+
+  Map<String, dynamic> toJsonSchema() {
+    final properties = <String, dynamic>{
+      for (final entry in argumentTypes.entries)
+        entry.key: {'type': entry.value.name},
+    };
+    final required = requiredArguments.toList()..sort();
+    return {
+      'name': name,
+      'description': description,
+      'parameters': {
+        'type': 'object',
+        'properties': properties,
+        'required': required,
+        'additionalProperties': allowAdditionalArguments,
+      },
+    };
+  }
 }

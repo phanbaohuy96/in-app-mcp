@@ -39,6 +39,14 @@ class InAppMcp {
 
   List<ToolDefinition> get tools => _registry.listTools();
 
+  Map<String, dynamic> toolsSchemaJson() {
+    return {
+      'tools': [
+        for (final definition in _registry.listTools()) definition.toJsonSchema(),
+      ],
+    };
+  }
+
   Future<ToolResult> handleToolCall(ToolCall call, {bool confirmed = false}) {
     return _invocationEngine.handle(
       call: call,
