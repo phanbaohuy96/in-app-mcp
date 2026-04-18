@@ -4,7 +4,6 @@ version: 1.0.0
 homepage: https://github.com/phanbaohuy96/in-app-mcp
 repository: https://github.com/phanbaohuy96/in-app-mcp
 issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
-publish_to: none
 
 environment:
   sdk: ^3.10.8
@@ -15,8 +14,7 @@ dependencies:
   # 4.x is adopted we can migrate to the Element2 model and widen this.
   analyzer: ">=6.5.0 <8.0.0"
   build: ^2.4.0
-  in_app_mcp_annotations:
-    path: ../in_app_mcp_annotations
+  in_app_mcp_annotations: ^1.0.0
   source_gen: ">=1.5.0 <3.0.0"
 
 dev_dependencies:
