@@ -1,0 +1,24 @@
+{
+  "models": [
+    {
+      "id": "gemma4_e2b_it",
+      "name": "Gemma 4 E2B (Instruct)",
+      "modelId": "litert-community/gemma-4-E2B-it-litert-lm",
+      "modelFile": "gemma-4-E2B-it.litertlm",
+      "sizeInBytes": 2583085056,
+      "description": "Public Gemma 4 E2B model for on-device LiteRT-LM inference.",
+      "recommended": true,
+      "downloadUrl": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
+    },
+    {
+      "id": "gemma4_e4b_it",
+      "name": "Gemma 4 E4B (Instruct)",
+      "modelId": "litert-community/gemma-4-E4B-it-litert-lm",
+      "modelFile": "gemma-4-E4B-it.litertlm",
+      "sizeInBytes": 3654467584,
+      "description": "Larger Gemma 4 variant with higher quality and memory usage.",
+      "recommended": false,
+      "downloadUrl": "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm"
+    }
+  ]
+}

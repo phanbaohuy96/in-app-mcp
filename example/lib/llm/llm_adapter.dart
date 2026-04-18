@@ -1,5 +1,20 @@
 import 'package:in_app_mcp/in_app_mcp.dart';
 
-abstract interface class LlmAdapter {
-  Future<ToolCall> buildToolCall(String userPrompt);
+import 'llm_adapter_mode.dart';
+
+class LlmTurn {
+  const LlmTurn({required this.message, this.toolCall});
+
+  final String message;
+  final ToolCall? toolCall;
+}
+
+abstract class LlmAdapter {
+  LlmAdapterMode get mode;
+
+  String get id;
+
+  Future<LlmTurn> buildTurn(String userPrompt);
+
+  Future<void> dispose() async {}
 }

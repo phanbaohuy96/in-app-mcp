@@ -1,0 +1,17 @@
+{
+  "name": "in-app-mcp-example-appium",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "test:android": "wdio run wdio.conf.ts"
+  },
+  "devDependencies": {
+    "@wdio/cli": "^9.22.0",
+    "@wdio/local-runner": "^9.22.0",
+    "@wdio/mocha-framework": "^9.22.0",
+    "@wdio/spec-reporter": "^9.22.0",
+    "appium": "^2.19.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

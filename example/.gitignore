@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Gemma model cache and env for repeated test/dev runs
+/model_cache/
+.env

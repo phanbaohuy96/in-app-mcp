@@ -1,33 +1,62 @@
-// This is a basic Flutter integration test.
-//
-// Since integration tests run in a full Flutter application, they can interact
-// with the host side of a plugin implementation, unlike Dart unit tests.
-//
-// For more information about Flutter integration tests, please see
-// https://flutter.dev/to/integration-testing
-
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_mcp/in_app_mcp.dart';
+import 'package:in_app_mcp_example/agent_tools/tool_catalog.dart';
 
 void main() {
-  test('register and execute tool', () async {
+  test('executes all catalog tool definitions in auto policy', () async {
     final plugin = InAppMcp(defaultPolicy: ToolPolicy.auto);
-    plugin.registerTool(
-      definition: const ToolDefinition(
-        name: 'ping',
-        description: 'Ping test tool',
-        argumentTypes: {'value': ToolArgType.string},
-        requiredArguments: {'value'},
+    final catalog = ToolCatalog();
+
+    for (final definition in catalog.definitions) {
+      plugin.registerTool(
+        definition: definition,
+        handler: (call) async => ToolResult.ok('ok'),
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+
+    final results = await Future.wait([
+      plugin.handleToolCall(
+        const ToolCall(
+          id: 'it-1',
+          toolName: 'schedule_weekday_alarm',
+          arguments: {
+            'hour': 6,
+            'minute': 0,
+            'weekdays': [1, 2, 3],
+          },
+        ),
       ),
-      handler: (call) async => ToolResult.ok('pong', data: {'value': call.arguments['value']}),
-    );
+      plugin.handleToolCall(
+        ToolCall(
+          id: 'it-2',
+          toolName: 'create_calendar_event',
+          arguments: {
+            'title': 'Meeting',
+            'startIso': now.toIso8601String(),
+            'endIso': now.add(const Duration(hours: 1)).toIso8601String(),
+          },
+        ),
+      ),
+      plugin.handleToolCall(
+        const ToolCall(
+          id: 'it-3',
+          toolName: 'open_map_directions',
+          arguments: {'destination': 'Tokyo'},
+        ),
+      ),
+      plugin.handleToolCall(
+        const ToolCall(
+          id: 'it-4',
+          toolName: 'compose_email_draft',
+          arguments: {'to': 'a@b.com'},
+        ),
+      ),
+    ], eagerError: true);
 
-    final result = await plugin.handleToolCall(
-      const ToolCall(id: 'it-1', toolName: 'ping', arguments: {'value': 'ok'}),
-    );
-
-    expect(result.success, true);
-    expect(result.message, 'pong');
+    for (final result in results) {
+      expect(result.success, true);
+    }
   });
 }
