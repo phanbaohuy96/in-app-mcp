@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Add `example/example.md` so pana's "Package has an example" check passes. No code changes.
+
 ## 1.1.0
 
 - Add `@McpToolPreview` — mark a top-level Dart function as a side-effect-free previewer for an `@McpTool`. Pairs with the Preview hook added to `in_app_mcp` 1.1.0.

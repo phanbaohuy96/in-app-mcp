@@ -9,6 +9,7 @@
 .buildlog/
 .claude/
 .history
+.playwright-mcp/
 .svn/
 .swiftpm/
 migrate_working_dir/

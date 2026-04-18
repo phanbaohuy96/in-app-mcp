@@ -1,3 +1,8 @@
+## 1.1.1
+
+- Add `example/example.md` so pana's "Package has an example" check passes.
+- Remove the local-path `dependency_overrides` on `in_app_mcp_annotations` now that 1.1.0 is published — pana's dependency-overrides hint goes away.
+
 ## 1.1.0
 
 - Add `McpToolPreviewGenerator` — for every `@McpToolPreview`-annotated top-level function returning `Future<Preview>`, emits a `<fn>Previewer(ToolCall)` adapter that unmarshals typed named parameters from `call.arguments`.
