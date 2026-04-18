@@ -19,12 +19,12 @@ class InAppMcp {
   InAppMcp({
     PolicyStore? policyStore,
     ToolPolicy defaultPolicy = ToolPolicy.confirm,
-  })  : _registry = ToolRegistry(),
-        _policyEngine = PolicyEngine(
-          policyStore: policyStore ?? InMemoryPolicyStore(),
-          defaultPolicy: defaultPolicy,
-        ),
-        _invocationEngine = InvocationEngine();
+  }) : _registry = ToolRegistry(),
+       _policyEngine = PolicyEngine(
+         policyStore: policyStore ?? InMemoryPolicyStore(),
+         defaultPolicy: defaultPolicy,
+       ),
+       _invocationEngine = InvocationEngine();
 
   final ToolRegistry _registry;
   final PolicyEngine _policyEngine;
@@ -39,10 +39,7 @@ class InAppMcp {
 
   List<ToolDefinition> get tools => _registry.listTools();
 
-  Future<ToolResult> handleToolCall(
-    ToolCall call, {
-    bool confirmed = false,
-  }) {
+  Future<ToolResult> handleToolCall(ToolCall call, {bool confirmed = false}) {
     return _invocationEngine.handle(
       call: call,
       registry: _registry,

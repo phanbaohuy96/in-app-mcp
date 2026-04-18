@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Example (Gemma from .env)",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceRoot}/example/lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file",
+        "./.env"
+      ]
+    },
+    {
+      "name": "Example (Mock)",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceRoot}/example/lib/main.dart",
+    }
+  ]
+}

@@ -1,14 +1,7 @@
 import 'tool_call.dart';
 import 'tool_result.dart';
 
-enum ToolArgType {
-  string,
-  integer,
-  number,
-  boolean,
-  array,
-  object,
-}
+enum ToolArgType { string, integer, number, boolean, array, object }
 
 typedef ToolHandler = Future<ToolResult> Function(ToolCall call);
 

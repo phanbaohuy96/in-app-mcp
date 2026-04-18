@@ -29,7 +29,10 @@ class ToolRegistry {
 
   RegisteredTool? find(String toolName) => _tools[toolName];
 
-  Future<ToolResult> invokeRegistered(RegisteredTool tool, ToolCall call) async {
+  Future<ToolResult> invokeRegistered(
+    RegisteredTool tool,
+    ToolCall call,
+  ) async {
     final validationErrors = tool.definition.validateArguments(call.arguments);
     if (validationErrors.isNotEmpty) {
       return ToolResult.fail(

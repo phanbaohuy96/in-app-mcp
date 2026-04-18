@@ -5,7 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 class ScheduleWeekdayAlarmTool {
   ScheduleWeekdayAlarmTool({FlutterLocalNotificationsPlugin? notifications})
-      : _notifications = notifications ?? FlutterLocalNotificationsPlugin();
+    : _notifications = notifications ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _notifications;
   bool _initialized = false;
@@ -31,7 +31,9 @@ class ScheduleWeekdayAlarmTool {
     final hour = call.arguments['hour'] as int;
     final minute = call.arguments['minute'] as int;
     final rawWeekdays = List<dynamic>.from(call.arguments['weekdays'] as List);
-    if (!rawWeekdays.every((value) => value is int && value >= 1 && value <= 7)) {
+    if (!rawWeekdays.every(
+      (value) => value is int && value >= 1 && value <= 7,
+    )) {
       return ToolResult.fail(
         ToolErrorCode.invalidArguments,
         'weekdays must be a list of integers from 1 to 7.',

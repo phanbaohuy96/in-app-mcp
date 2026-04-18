@@ -1,16 +1,8 @@
 import 'policy_store.dart';
 
-enum ToolPolicy {
-  auto,
-  confirm,
-  deny,
-}
+enum ToolPolicy { auto, confirm, deny }
 
-enum PolicyDecision {
-  allow,
-  requireConfirmation,
-  deny,
-}
+enum PolicyDecision { allow, requireConfirmation, deny }
 
 class PolicyEngine {
   PolicyEngine({
