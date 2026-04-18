@@ -56,6 +56,17 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+# `in_app_mcp_gen`'s published pubspec declares
+# `in_app_mcp_annotations: ^1.0.0` (pub). This override forces the transitive
+# dep to resolve to the local sibling source so edits in
+# `packages/in_app_mcp_annotations` flow through immediately and a single
+# canonical `McpTool` type is used.
+dependency_overrides:
+  in_app_mcp_annotations:
+    path: ../packages/in_app_mcp_annotations
+  in_app_mcp_gen:
+    path: ../packages/in_app_mcp_gen
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

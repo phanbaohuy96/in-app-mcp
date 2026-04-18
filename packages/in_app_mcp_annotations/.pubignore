@@ -1,0 +1,6 @@
+# Dart/Pub build artefacts and caches.
+.dart_tool/
+pubspec.lock
+
+# Misc.
+.DS_Store

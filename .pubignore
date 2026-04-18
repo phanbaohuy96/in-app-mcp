@@ -1,7 +1,3 @@
-# Sibling packages are published to pub.dev separately; do not rebundle
-# their source inside the in_app_mcp tarball.
-packages/
-
 # Flutter / Dart build artifacts and caches.
 .dart_tool/
 .flutter-plugins

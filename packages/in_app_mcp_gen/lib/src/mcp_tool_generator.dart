@@ -10,7 +10,13 @@ import 'package:build/build.dart';
 import 'package:in_app_mcp_annotations/in_app_mcp_annotations.dart';
 import 'package:source_gen/source_gen.dart';
 
+/// `source_gen` generator that materialises an `@McpTool`-annotated Dart
+/// function into a `ToolDefinition` constant plus a typed handler adapter.
+///
+/// Registered indirectly via `mcpToolBuilder` + `build.yaml`; end-users
+/// typically never instantiate this class themselves.
 class McpToolGenerator extends GeneratorForAnnotation<McpTool> {
+  /// Creates a stateless generator. Safe to share across builds.
   const McpToolGenerator();
 
   @override

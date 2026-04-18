@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Add dartdoc comments on `mcpToolBuilder` and `McpToolGenerator`. No API changes.
+
 ## 1.0.0
 
 - Initial public release.
