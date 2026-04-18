@@ -1,6 +1,6 @@
 name: in_app_mcp_gen
 description: Build-runner code generator for in_app_mcp. Emits ToolDefinition and typed handler / previewer / undoer adapters from @McpTool, @McpToolPreview, and @McpToolUndo annotations.
-version: 1.1.0
+version: 1.1.1
 homepage: https://github.com/phanbaohuy96/in-app-mcp
 repository: https://github.com/phanbaohuy96/in-app-mcp
 issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
@@ -21,10 +21,3 @@ dev_dependencies:
   build_runner: ">=2.4.0 <3.0.0"
   lints: ^5.0.0
   test: ^1.25.0
-
-# Local development: point at the sibling annotations package so generator
-# changes can reference new annotations before a pub.dev release. Removed
-# in the published tarball via `.pubignore`.
-dependency_overrides:
-  in_app_mcp_annotations:
-    path: ../in_app_mcp_annotations
