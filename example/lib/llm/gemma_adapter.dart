@@ -11,9 +11,7 @@ import 'tool_call_parser.dart';
 
 enum _SchemaType { integer, number, boolean, array, object, string }
 
-final _unquotedKeyPattern = RegExp(
-  r'([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)',
-);
+final _unquotedKeyPattern = RegExp(r'([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)');
 
 /// Quote bareword object keys inside a JSON-ish string.
 ///
@@ -125,7 +123,11 @@ class GemmaAdapter extends LlmAdapter {
           return _toTurn(
             _assistantMessageForParsedToolCall(responseText),
             parsedCall.toolName,
-            _normalizeArguments(parsedCall.toolName, parsedCall.arguments, userPrompt),
+            _normalizeArguments(
+              parsedCall.toolName,
+              parsedCall.arguments,
+              userPrompt,
+            ),
             id: parsedCall.id,
           );
         }
@@ -300,7 +302,9 @@ Output rules:
     final args = properties.entries
         .map((entry) {
           final type = ((entry.value as Map?)?['type'] ?? 'string').toString();
-          final isRequired = required.contains(entry.key) ? 'required' : 'optional';
+          final isRequired = required.contains(entry.key)
+              ? 'required'
+              : 'optional';
           return '${entry.key}:$type($isRequired)';
         })
         .join(', ');
@@ -371,7 +375,10 @@ Output rules:
     final mapped = <int>[];
     for (final item in rawWeekdays) {
       final value = _weekdayToInt(item);
-      if (value != null && value >= 1 && value <= 7 && !mapped.contains(value)) {
+      if (value != null &&
+          value >= 1 &&
+          value <= 7 &&
+          !mapped.contains(value)) {
         mapped.add(value);
       }
     }
@@ -385,15 +392,21 @@ Output rules:
   bool _preferWeekdaysFromPrompt(String userPrompt) {
     final text = userPrompt.toLowerCase();
     final asksWeekdays =
-        text.contains('weekday') || text.contains('weekdays') || text.contains('workday');
+        text.contains('weekday') ||
+        text.contains('weekdays') ||
+        text.contains('workday');
     if (!asksWeekdays) {
       return false;
     }
 
     final asksEveryDay =
-        text.contains('every day') || text.contains('everyday') || text.contains('daily');
+        text.contains('every day') ||
+        text.contains('everyday') ||
+        text.contains('daily');
     final asksWeekend =
-        text.contains('weekend') || text.contains('saturday') || text.contains('sunday');
+        text.contains('weekend') ||
+        text.contains('saturday') ||
+        text.contains('sunday');
     return !asksEveryDay && !asksWeekend;
   }
 

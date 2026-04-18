@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import '../model_manager/model_catalog_entry.dart';
 import '../model_manager/model_install_state.dart';
 
 enum _InlineToolStatus { pending, running, succeeded, failed, canceled }
+
+enum _GrantChoice { onceNoGrant, grant5Min, grantSession }
 
 class ChatDemoScreen extends StatefulWidget {
   const ChatDemoScreen({
@@ -47,12 +50,31 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
       <String, _InlineToolCallState>{};
   String _result = '';
   bool _running = false;
+  StreamSubscription<AuditEntry>? _ledgerSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _ledgerSubscription = widget.mcp.auditLedger?.changes.listen(
+      _onLedgerEntry,
+    );
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _ledgerSubscription?.cancel();
     super.dispose();
+  }
+
+  void _onLedgerEntry(AuditEntry entry) {
+    final existing = _inlineCalls[entry.call.id];
+    if (existing == null || existing.auditEntryId != null) return;
+    if (!mounted) return;
+    setState(() {
+      _inlineCalls[entry.call.id] = existing.copyWith(auditEntryId: entry.id);
+    });
   }
 
   Future<void> _appendMessage(_ChatMessage message) async {
@@ -187,14 +209,18 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
       if (call == null) {
         await _appendMessage(_ChatMessage.assistant(turn.message));
       } else {
-        final policyDecision = await widget.mcp.getPolicyDecision(
-          call.toolName,
-        );
+        final (policyDecision, preview) = await (
+          widget.mcp.getPolicyDecision(call.toolName),
+          widget.mcp
+              .previewToolCall(call)
+              .then<Preview?>((p) => p, onError: (_) => null),
+        ).wait;
         final inlineState = _InlineToolCallState(
           call: call,
           policyDecision: policyDecision,
           toolDescription: _toolDescription(call.toolName),
           argumentsJson: _prettyJson.convert(call.arguments),
+          preview: preview,
         );
 
         await _appendMessage(
@@ -260,9 +286,11 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
         return;
       }
 
+      // _onLedgerEntry will attach auditEntryId when the ledger emits.
       setState(() {
         _result = resultJson;
-        _inlineCalls[callId] = current.copyWith(
+        final latest = _inlineCalls[callId] ?? current;
+        _inlineCalls[callId] = latest.copyWith(
           status: result.success
               ? _InlineToolStatus.succeeded
               : _InlineToolStatus.failed,
@@ -301,6 +329,47 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
     setState(() {
       _inlineCalls[callId] = current.copyWith(
         status: _InlineToolStatus.canceled,
+      );
+    });
+  }
+
+  Future<void> _onGrantChoice(String callId, _GrantChoice choice) async {
+    final current = _inlineCalls[callId];
+    if (current == null) return;
+    if (current.status != _InlineToolStatus.pending) return;
+    if (current.policyDecision == PolicyDecision.deny) return;
+
+    final toolName = current.call.toolName;
+    switch (choice) {
+      case _GrantChoice.onceNoGrant:
+        break;
+      case _GrantChoice.grant5Min:
+        await widget.mcp.grantFor(toolName, const Duration(minutes: 5));
+        break;
+      case _GrantChoice.grantSession:
+        await widget.mcp.grantUntilCleared(toolName);
+        break;
+    }
+    await _executeInlineToolCall(callId);
+  }
+
+  Future<void> _undoInlineToolCall(String callId) async {
+    final current = _inlineCalls[callId];
+    if (current == null) return;
+    final entryId = current.auditEntryId;
+    if (entryId == null || current.undone || current.undoing) return;
+
+    setState(() {
+      _inlineCalls[callId] = current.copyWith(undoing: true);
+    });
+
+    final undoResult = await widget.mcp.undoFromLedger(entryId);
+
+    if (!mounted) return;
+    setState(() {
+      _inlineCalls[callId] = current.copyWith(
+        undoing: false,
+        undoResult: undoResult,
       );
     });
   }
@@ -380,6 +449,66 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
             label: _policyLabel(state.policyDecision),
             color: policyColor,
           ),
+          if (state.preview != null) ...[
+            const SizedBox(height: 12),
+            _SectionHeader(label: 'Preview', scheme: scheme),
+            const SizedBox(height: 4),
+            Container(
+              key: ValueKey('inline-tool-preview-$callId'),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.preview_outlined,
+                        size: 16,
+                        color: scheme.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          state.preview!.summary,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: scheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  for (final warning in state.preview!.warnings) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 14,
+                          color: Colors.amber.shade800,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            warning.message,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           if (call.arguments.isNotEmpty) ...[
             const SizedBox(height: 12),
             _SectionHeader(label: 'Arguments', scheme: scheme),
@@ -402,6 +531,28 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
                 label: const Text('Run'),
               ),
               const SizedBox(width: 8),
+              if (canRun)
+                PopupMenuButton<_GrantChoice>(
+                  key: ValueKey('inline-grant-menu-$callId'),
+                  tooltip: 'Grant and run',
+                  icon: const Icon(Icons.flash_on, size: 18),
+                  onSelected: (choice) => _onGrantChoice(callId, choice),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _GrantChoice.onceNoGrant,
+                      child: Text('Run once'),
+                    ),
+                    PopupMenuItem(
+                      value: _GrantChoice.grant5Min,
+                      child: Text('Run + allow 5 min'),
+                    ),
+                    PopupMenuItem(
+                      value: _GrantChoice.grantSession,
+                      child: Text('Run + allow for session'),
+                    ),
+                  ],
+                ),
+              const Spacer(),
               TextButton(
                 key: ValueKey('inline-cancel-tool-call-button-$callId'),
                 onPressed: canCancel
@@ -419,9 +570,7 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
               children: [
                 Icon(
                   result.success ? Icons.check_circle : Icons.error,
-                  color: result.success
-                      ? Colors.green.shade600
-                      : scheme.error,
+                  color: result.success ? Colors.green.shade600 : scheme.error,
                   size: 18,
                 ),
                 const SizedBox(width: 6),
@@ -445,6 +594,39 @@ class _ChatDemoScreenState extends State<ChatDemoScreen> {
                   valueText: _formatArgValue(entry.value),
                   scheme: scheme,
                 ),
+              ),
+            ],
+            if (result.success && state.auditEntryId != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    key: ValueKey('inline-undo-button-$callId'),
+                    onPressed: (state.undone || state.undoing)
+                        ? null
+                        : () => _undoInlineToolCall(callId),
+                    icon: state.undoing
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.undo, size: 16),
+                    label: Text(state.undone ? 'Undone' : 'Undo'),
+                  ),
+                  if (state.undoResult != null &&
+                      !state.undoResult!.success) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        state.undoResult!.message,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],
@@ -621,6 +803,10 @@ class _InlineToolCallState {
     this.status = _InlineToolStatus.pending,
     this.resultJson,
     this.result,
+    this.preview,
+    this.auditEntryId,
+    this.undoing = false,
+    this.undoResult,
   });
 
   final ToolCall call;
@@ -630,11 +816,21 @@ class _InlineToolCallState {
   final _InlineToolStatus status;
   final String? resultJson;
   final ToolResult? result;
+  final Preview? preview;
+  final String? auditEntryId;
+  final bool undoing;
+  final ToolResult? undoResult;
+
+  bool get undone => undoResult?.success == true;
 
   _InlineToolCallState copyWith({
     _InlineToolStatus? status,
     String? resultJson,
     ToolResult? result,
+    Preview? preview,
+    String? auditEntryId,
+    bool? undoing,
+    ToolResult? undoResult,
   }) {
     return _InlineToolCallState(
       call: call,
@@ -644,6 +840,10 @@ class _InlineToolCallState {
       status: status ?? this.status,
       resultJson: resultJson ?? this.resultJson,
       result: result ?? this.result,
+      preview: preview ?? this.preview,
+      auditEntryId: auditEntryId ?? this.auditEntryId,
+      undoing: undoing ?? this.undoing,
+      undoResult: undoResult ?? this.undoResult,
     );
   }
 }

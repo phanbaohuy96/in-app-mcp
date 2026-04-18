@@ -1,34 +1,71 @@
+import '../model/preview.dart';
 import '../model/tool_call.dart';
 import '../model/tool_definition.dart';
 import '../model/tool_error_code.dart';
 import '../model/tool_result.dart';
 
-/// Pairing of a [ToolDefinition] with its [ToolHandler], as stored in
-/// [ToolRegistry].
+/// Optional side-effect-free previewer attached to a tool via
+/// `InAppMcp.registerTool(previewer: ...)`.
+///
+/// Receives a validated-shape [ToolCall] (arguments have not been type-checked
+/// yet, but the tool has been resolved) and returns a [Preview] describing
+/// what the handler would do. Callers use this *before* showing a
+/// confirmation UI so the user can spot LLM mistakes early.
+typedef ToolPreviewer = Future<Preview> Function(ToolCall call);
+
+/// Optional reverse-effect handler attached to a tool via
+/// `InAppMcp.registerTool(undoer: ...)`.
+///
+/// Receives the original [ToolCall] and the [ToolResult] from the successful
+/// execution, and performs the inverse side effect. Returning a success
+/// [ToolResult] marks the audit entry as undone.
+typedef ToolUndoer =
+    Future<ToolResult> Function(ToolCall call, ToolResult original);
+
+/// Pairing of a [ToolDefinition] with its [ToolHandler] plus optional
+/// [previewer] and [undoer] hooks, as stored in [ToolRegistry].
 class RegisteredTool {
   /// Creates a binding between [definition] and its [handler].
-  const RegisteredTool({required this.definition, required this.handler});
+  const RegisteredTool({
+    required this.definition,
+    required this.handler,
+    this.previewer,
+    this.undoer,
+  });
 
   /// Declarative contract for the tool.
   final ToolDefinition definition;
 
   /// Handler to invoke once validation + policy have passed.
   final ToolHandler handler;
+
+  /// Optional side-effect-free previewer.
+  final ToolPreviewer? previewer;
+
+  /// Optional reverse-effect handler.
+  final ToolUndoer? undoer;
 }
 
 /// Holds the set of tools the runtime can invoke and validates
 /// [ToolCall.arguments] against their [ToolDefinition] before dispatching.
 class ToolRegistry {
+  /// Creates an empty registry.
+  ToolRegistry();
+
   final Map<String, RegisteredTool> _tools = {};
 
   /// Registers (or replaces) a tool under [ToolDefinition.name].
   void registerTool({
     required ToolDefinition definition,
     required ToolHandler handler,
+    ToolPreviewer? previewer,
+    ToolUndoer? undoer,
   }) {
     _tools[definition.name] = RegisteredTool(
       definition: definition,
       handler: handler,
+      previewer: previewer,
+      undoer: undoer,
     );
   }
 

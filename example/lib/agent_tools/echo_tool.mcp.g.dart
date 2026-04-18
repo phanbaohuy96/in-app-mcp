@@ -22,3 +22,25 @@ Future<ToolResult> echoHandler(ToolCall call) {
     repeat: call.arguments['repeat'] as int? ?? 1,
   );
 }
+
+// **************************************************************************
+// McpToolPreviewGenerator
+// **************************************************************************
+
+Future<Preview> echoPreviewPreviewer(ToolCall call) {
+  return echoPreview(
+    message: call.arguments['message'] as String,
+    repeat: call.arguments['repeat'] as int? ?? 1,
+  );
+}
+
+// **************************************************************************
+// McpToolUndoGenerator
+// **************************************************************************
+
+Future<ToolResult> echoUndoUndoer(ToolCall call, ToolResult original) {
+  return echoUndo(
+    message: call.arguments['message'] as String,
+    repeat: call.arguments['repeat'] as int? ?? 1,
+  );
+}

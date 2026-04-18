@@ -1,6 +1,21 @@
 # in_app_mcp_example
 
-Demonstrates how to use the in_app_mcp plugin.
+Reference integration of [`in_app_mcp`](../README.md) showing the full
+**Consent Lifecycle** in a Flutter UI:
+
+- inline tool-call card with a **Preview** row (catches LLM mistakes before any
+  side effect runs)
+- **grant submenu** next to Run — *Run once* / *Run + allow 5 min* /
+  *Run + allow for session* (`mcp.grantFor` / `mcp.grantUntilCleared`)
+- inline **Undo** on successful calls, driven by the tool's `@McpToolUndo`
+- **Audit timeline** screen (history icon in the app bar) subscribing to
+  `mcp.auditLedger.changes`
+- **Active grants** card in Settings with per-grant + revoke-all controls
+
+The five demo tools (`schedule_weekday_alarm`, `create_calendar_event`,
+`open_map_directions`, `compose_email_draft`, codegen-backed `echo`) live
+under `lib/agent_tools/`. `schedule_weekday_alarm` and `echo` ship both a
+previewer and an undoer as full-lifecycle examples.
 
 ## Run the app
 
@@ -63,24 +78,37 @@ flutter run --dart-define=LLM_ADAPTER=gemma --dart-define=E2E_MODE=true
 
 When `E2E_MODE=true`, the Gemma adapter returns a deterministic tool call payload to keep E2E stable.
 
-## iOS simulator (Gemma) walkthrough
+## iOS simulator (Gemma) walkthroughs
 
-Screenshots of the prompt → tool-call → policy → run flow on a booted
-iPhone simulator live in [`../doc/screenshots/`](../doc/screenshots/) and are
-embedded in the root [README.md](../README.md#end-to-end-on-ios-simulator-gemma-4-e2b).
+Screenshots of each Gemma-driven flow on a booted iPhone simulator live
+in [`../doc/screenshots/`](../doc/screenshots/) and are embedded in the
+root [README.md](../README.md).
 
-Reproduce the screenshots with:
+Three integration tests regenerate them:
 
 ```bash
+# Smoke test: single prompt → tool call → run → Succeeded (~60 s).
 flutter test -d <booted-simulator-id> \
   integration_test/gemma_echo_flow_test.dart \
   --dart-define=LLM_ADAPTER=gemma \
   --dart-define=GEMMA_MODEL_PATH=$PWD/model_cache/gemma-4-E2B-it.litertlm
+
+# Per-tool showcase (~5–8 min) — regenerates the five tool_*.png screenshots.
+flutter test -d <booted-simulator-id> \
+  integration_test/tool_showcase_test.dart \
+  --dart-define=LLM_ADAPTER=gemma \
+  --dart-define=GEMMA_MODEL_PATH=$PWD/model_cache/gemma-4-E2B-it.litertlm
+
+# Consent Lifecycle showcase (~1 min) — preview → grant menu → execute →
+# undo → audit timeline. Writes consent_*.png via an embedded screenshot
+# watcher that drives xcrun simctl io booted screenshot off the test's
+# [SCREENSHOT:<name>] markers.
+./scripts/capture_consent_showcase.sh
 ```
 
-The test prints `[SCREENSHOT:<name>]` markers on stdout at each key state;
-`xcrun simctl io booted screenshot` can be driven off those markers to
-capture the PNGs used in the README.
+For the first two tests you need to run a parallel shell watcher on the
+test's `[SCREENSHOT:<name>]` markers yourself (the consent-lifecycle
+script bundles the watcher for convenience).
 
 ## Appium (Android)
 
