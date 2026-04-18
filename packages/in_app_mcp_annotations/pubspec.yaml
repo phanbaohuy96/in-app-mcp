@@ -1,0 +1,13 @@
+name: in_app_mcp_annotations
+description: Annotations used by in_app_mcp_gen to generate ToolDefinition and handler adapters for in_app_mcp.
+version: 0.0.1
+homepage: https://github.com/phanbaohuy96/in-app-mcp
+repository: https://github.com/phanbaohuy96/in-app-mcp
+issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues
+
+environment:
+  sdk: ^3.10.8
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

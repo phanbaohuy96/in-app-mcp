@@ -63,6 +63,25 @@ flutter run --dart-define=LLM_ADAPTER=gemma --dart-define=E2E_MODE=true
 
 When `E2E_MODE=true`, the Gemma adapter returns a deterministic tool call payload to keep E2E stable.
 
+## iOS simulator (Gemma) walkthrough
+
+Screenshots of the prompt → tool-call → policy → run flow on a booted
+iPhone simulator live in [`../doc/screenshots/`](../doc/screenshots/) and are
+embedded in the root [README.md](../README.md#end-to-end-on-ios-simulator-gemma-4-e2b).
+
+Reproduce the screenshots with:
+
+```bash
+flutter test -d <booted-simulator-id> \
+  integration_test/gemma_echo_flow_test.dart \
+  --dart-define=LLM_ADAPTER=gemma \
+  --dart-define=GEMMA_MODEL_PATH=$PWD/model_cache/gemma-4-E2B-it.litertlm
+```
+
+The test prints `[SCREENSHOT:<name>]` markers on stdout at each key state;
+`xcrun simctl io booted screenshot` can be driven off those markers to
+capture the PNGs used in the README.
+
 ## Appium (Android)
 
 Appium files are under `e2e/appium`.

@@ -11,6 +11,22 @@ import 'tool_call_parser.dart';
 
 enum _SchemaType { integer, number, boolean, array, object, string }
 
+final _unquotedKeyPattern = RegExp(
+  r'([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)',
+);
+
+/// Quote bareword object keys inside a JSON-ish string.
+///
+/// `{"foo":1,bar:2}` → `{"foo":1,"bar":2}`. Keys that are already quoted are
+/// left alone — the regex only matches identifiers that immediately follow
+/// `{` or `,` (i.e. object-entry starts), never positions that follow `:`.
+String quoteUnquotedObjectKeys(String input) {
+  return input.replaceAllMapped(
+    _unquotedKeyPattern,
+    (match) => '${match[1]}"${match[2]}"${match[3]}',
+  );
+}
+
 class GemmaAdapter extends LlmAdapter {
   GemmaAdapter({
     required this.modelPath,
@@ -320,8 +336,13 @@ Output rules:
       return null;
     }
 
+    // Gemma 4 E2B sometimes emits JSON with unquoted object keys, e.g.
+    // {"toolName":"x","arguments":{hour:6,minute:0}}. strict jsonDecode
+    // rejects this; preprocess to quote unquoted keys before parsing.
+    final normalized = quoteUnquotedObjectKeys(candidate);
+
     try {
-      return const ToolCallParser().parse({'rawText': text});
+      return const ToolCallParser().parse(normalized);
     } on FormatException {
       return null;
     }

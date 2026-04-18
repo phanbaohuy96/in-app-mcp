@@ -40,8 +40,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('I can schedule that alarm for you.'), findsOneWidget);
-    expect(find.textContaining('Policy:'), findsWidgets);
-    expect(find.textContaining('Status: Awaiting action'), findsWidgets);
+    expect(find.text('Confirmation required'), findsWidgets);
+    expect(find.text('Awaiting action'), findsWidgets);
     expect(find.text('No result yet.'), findsOneWidget);
 
     final inlineRunButton = find.byWidgetPredicate(
@@ -55,7 +55,7 @@ void main() {
     await tester.tap(inlineRunButton);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Status: Awaiting action'), findsNothing);
+    expect(find.text('Awaiting action'), findsNothing);
     expect(find.text('No result yet.'), findsNothing);
   });
 }
