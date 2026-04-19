@@ -1,6 +1,6 @@
 name: in_app_mcp
 description: "Policy-gated tool runtime for in-app LLM/agent tools. Per-tool auto/confirm/deny, typed contracts, structured results."
-version: 1.1.0
+version: 1.2.0
 homepage: https://github.com/phanbaohuy96/in-app-mcp
 repository: https://github.com/phanbaohuy96/in-app-mcp
 issue_tracker: https://github.com/phanbaohuy96/in-app-mcp/issues

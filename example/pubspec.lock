@@ -360,21 +360,21 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "1.1.0"
+    version: "1.2.0"
   in_app_mcp_annotations:
     dependency: "direct main"
     description:
       path: "../packages/in_app_mcp_annotations"
       relative: true
     source: path
-    version: "1.0.1"
+    version: "1.1.1"
   in_app_mcp_gen:
     dependency: "direct dev"
     description:
       path: "../packages/in_app_mcp_gen"
       relative: true
     source: path
-    version: "1.0.1"
+    version: "1.1.1"
   integration_test:
     dependency: "direct dev"
     description: flutter

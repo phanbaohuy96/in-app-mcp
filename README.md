@@ -30,10 +30,11 @@ Most Flutter agent/LLM packages focus on prompting, providers, and model orchest
 
 ## Current status
 
-1.1.0 ships the full Consent Lifecycle.
+1.2.0 ships the Consent Lifecycle + a pluggable interceptor seam.
 
 What ships in the package:
 - tool runtime in `lib/src/**` (registry, policy engine, invocation engine)
+- **invocation interceptors**: `InvocationInterceptor` — four optional hooks (`onResolvePolicy`, `beforeExecute`, `afterExecute`, `onAudit`) for rate limiting, remote-config policy, PII redaction, telemetry fan-out
 - ephemeral grants: `EphemeralGrant` + `GrantStore` + `InMemoryGrantStore` — allow-once, allow-for-duration, allow-until-cleared
 - audit ledger: `AuditLedger` + `AuditEntry` + `InMemoryAuditLedger` with a live `changes` stream
 - preview hook: `Preview` + `PreviewWarning` + `ToolPreviewer` typedef
@@ -62,7 +63,7 @@ Add dependency:
 
 ```yaml
 dependencies:
-  in_app_mcp: ^1.0.1
+  in_app_mcp: ^1.2.0
 ```
 
 Then run:
@@ -106,11 +107,64 @@ print(result.toJson());
 ## Runtime flow
 
 1. LLM adapter produces `ToolCall`
-2. `InAppMcp` resolves policy for `toolName`
-3. If denied → `policy_denied`
-4. If confirmation required and not confirmed → `confirmation_required`
-5. Registry validates arguments
-6. Handler executes and returns `ToolResult`
+2. `InAppMcp` resolves policy for `toolName` (consumes any active `EphemeralGrant`)
+3. Each registered `InvocationInterceptor.onResolvePolicy` can override the resolution
+4. If denied → `policy_denied`
+5. If confirmation required and not confirmed → `confirmation_required`
+6. Each `InvocationInterceptor.beforeExecute` can veto the call (first-non-null-wins)
+7. Registry validates arguments
+8. Handler executes and returns `ToolResult`
+9. Each `InvocationInterceptor.afterExecute` can rewrite the result
+10. `AuditLedger` records the outcome; each `InvocationInterceptor.onAudit` is notified
+
+## Interceptors
+
+Host apps plug into the pipeline without implementing a whole `PolicyStore` / `GrantStore` / `AuditLedger`. Subclass `InvocationInterceptor`, override only the methods you need, and register via the constructor:
+
+```dart
+class RateLimiter extends InvocationInterceptor {
+  final Map<String, DateTime> _lastCall = {};
+
+  @override
+  Future<ToolResult?> beforeExecute(
+    ToolCall call,
+    ResolvedPolicy resolved,
+  ) async {
+    final now = DateTime.now();
+    final last = _lastCall[call.toolName];
+    // Record the timestamp before any `await` so concurrent calls on the
+    // same isolate can't both see the pre-update value and slip through.
+    _lastCall[call.toolName] = now;
+    if (last != null && now.difference(last).inSeconds < 5) {
+      return ToolResult.fail('rate_limited', 'Try again in 5 seconds.');
+    }
+    return null; // proceed
+  }
+}
+
+class Telemetry extends InvocationInterceptor {
+  @override
+  Future<void> onAudit(AuditEntry entry) async {
+    await Sentry.addBreadcrumb(Breadcrumb(
+      category: 'tool_call',
+      data: {'tool': entry.call.toolName, 'success': entry.result.success},
+    ));
+  }
+}
+
+final mcp = InAppMcp(interceptors: [RateLimiter(), Telemetry()]);
+```
+
+The four hooks (all optional):
+
+| Hook | Fires when | Return non-null to… |
+|---|---|---|
+| `onResolvePolicy` | after `PolicyEngine` decides, before the deny/confirm gate | override the policy decision (chain-through) |
+| `beforeExecute` | after policy allows, before the handler runs | veto the call with a failure `ToolResult` (first-wins) |
+| `afterExecute` | after the handler returns, before the ledger records | rewrite the result — e.g. redact PII (chain-through) |
+| `onAudit` | after the ledger records an entry | fire-and-forget telemetry; exceptions are swallowed |
+
+Modifying hooks (the first three) propagate exceptions up and fail the invocation just as a handler exception would. Only `onAudit` swallows errors, so broken telemetry never breaks a tool call.
 
 ## Tool-call showcase
 
@@ -301,7 +355,7 @@ for the one-liner watcher.
 - `GrantStore`, `InMemoryGrantStore`, `EphemeralGrant`
 - `AuditLedger`, `InMemoryAuditLedger`, `AuditEntry`
 - `ToolRegistry`, `RegisteredTool`, `ToolPreviewer`, `ToolUndoer`
-- `InvocationEngine`
+- `InvocationEngine`, `InvocationInterceptor`
 
 ## Error codes
 

@@ -14,6 +14,7 @@ export 'src/model/tool_result.dart';
 export 'src/runtime/audit_ledger.dart';
 export 'src/runtime/grant_store.dart';
 export 'src/runtime/invocation_engine.dart';
+export 'src/runtime/invocation_interceptor.dart';
 export 'src/runtime/policy_engine.dart';
 export 'src/runtime/policy_store.dart';
 export 'src/runtime/tool_registry.dart';
@@ -26,6 +27,7 @@ import 'src/model/tool_result.dart';
 import 'src/runtime/audit_ledger.dart';
 import 'src/runtime/grant_store.dart';
 import 'src/runtime/invocation_engine.dart';
+import 'src/runtime/invocation_interceptor.dart';
 import 'src/runtime/policy_engine.dart';
 import 'src/runtime/policy_store.dart';
 import 'src/runtime/tool_registry.dart';
@@ -56,6 +58,9 @@ class InAppMcp {
   /// The audit ledger is enabled by default with an [InMemoryAuditLedger].
   /// Pass a custom [auditLedger] to persist / observe entries, or set
   /// [enableAudit] to `false` to disable recording.
+  ///
+  /// [interceptors] run in order during every [handleToolCall]; see
+  /// [InvocationInterceptor] for per-hook chain semantics.
   factory InAppMcp({
     PolicyStore? policyStore,
     GrantStore? grantStore,
@@ -63,6 +68,7 @@ class InAppMcp {
     AuditLedger? auditLedger,
     bool enableAudit = true,
     ToolPolicy defaultPolicy = ToolPolicy.confirm,
+    List<InvocationInterceptor> interceptors = const [],
   }) {
     final grants = grantStore ?? (enableGrants ? InMemoryGrantStore() : null);
     final ledger = auditLedger ?? (enableAudit ? InMemoryAuditLedger() : null);
@@ -76,6 +82,9 @@ class InAppMcp {
       invocationEngine: const InvocationEngine(),
       grantStore: grants,
       auditLedger: ledger,
+      interceptors: interceptors.isEmpty
+          ? const []
+          : List.unmodifiable(interceptors),
     );
   }
 
@@ -85,17 +94,24 @@ class InAppMcp {
     required InvocationEngine invocationEngine,
     required GrantStore? grantStore,
     required AuditLedger? auditLedger,
+    required List<InvocationInterceptor> interceptors,
   }) : _registry = registry,
        _policyEngine = policyEngine,
        _invocationEngine = invocationEngine,
        _grantStore = grantStore,
-       _auditLedger = auditLedger;
+       _auditLedger = auditLedger,
+       _interceptors = interceptors;
 
   final ToolRegistry _registry;
   final PolicyEngine _policyEngine;
   final InvocationEngine _invocationEngine;
   final AuditLedger? _auditLedger;
   final GrantStore? _grantStore;
+  final List<InvocationInterceptor> _interceptors;
+
+  /// Registered [InvocationInterceptor]s in their execution order. The list
+  /// is immutable; swap the whole runtime to change it.
+  List<InvocationInterceptor> get interceptors => _interceptors;
 
   /// The backing audit ledger, or `null` when the ledger is disabled.
   AuditLedger? get auditLedger => _auditLedger;
@@ -171,6 +187,7 @@ class InAppMcp {
       policyEngine: _policyEngine,
       confirmed: confirmed,
       auditLedger: _auditLedger,
+      interceptors: _interceptors,
     );
   }
 
