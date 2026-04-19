@@ -1,3 +1,10 @@
+## 1.2.0
+
+- **Interceptors.** New `InvocationInterceptor` abstract class with four optional hooks — `onResolvePolicy`, `beforeExecute`, `afterExecute`, `onAudit` — lets host apps observe or modify the invocation pipeline without replacing a whole `PolicyStore` / `GrantStore` / `AuditLedger`. Register via the new `interceptors:` parameter on the `InAppMcp` constructor.
+- Canonical use cases: rate limiting (`beforeExecute` returns `rate_limited`), remote-config policy overrides (`onResolvePolicy`), PII redaction (`afterExecute`), telemetry fan-out to Sentry / Datadog (`onAudit`).
+- Chain semantics: `onResolvePolicy` and `afterExecute` are chain-through (each interceptor sees the upstream's output); `beforeExecute` is first-non-null-wins (vetoing short-circuits the rest); `onAudit` is fan-out with errors swallowed so telemetry failures never break an invocation. Exceptions from the modifying hooks propagate and fail the call as a handler exception would.
+- Fully additive — existing 1.1.x consumers see no change.
+
 ## 1.1.0
 
 **Consent Lifecycle** — four composable features that turn `in_app_mcp` from a policy gate into a full preview → confirm → execute → audit → undo trust loop for in-app AI tool calls.

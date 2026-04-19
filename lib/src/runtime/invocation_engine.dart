@@ -2,6 +2,7 @@ import '../model/tool_call.dart';
 import '../model/tool_error_code.dart';
 import '../model/tool_result.dart';
 import 'audit_ledger.dart';
+import 'invocation_interceptor.dart';
 import 'policy_engine.dart';
 import 'tool_registry.dart';
 
@@ -9,11 +10,15 @@ import 'tool_registry.dart';
 ///
 /// Step order:
 /// 1. Resolve the registered tool (returns `tool_not_found` if missing).
-/// 2. Ask the [PolicyEngine] for a decision — return `policy_denied` on
-///    deny, `confirmation_required` on requireConfirmation when
-///    `confirmed` is `false`.
-/// 3. Delegate validation + execution to [ToolRegistry.invokeRegistered].
-/// 4. If an [AuditLedger] is supplied, append a record of the outcome.
+/// 2. Ask the [PolicyEngine] for a decision and let
+///    [InvocationInterceptor.onResolvePolicy] override it.
+/// 3. Return `policy_denied` on deny, `confirmation_required` on
+///    requireConfirmation when `confirmed` is `false`.
+/// 4. Ask each [InvocationInterceptor.beforeExecute] for a veto.
+/// 5. Delegate validation + execution to [ToolRegistry.invokeRegistered].
+/// 6. Let [InvocationInterceptor.afterExecute] rewrite the result.
+/// 7. If an [AuditLedger] is supplied, append a record of the outcome and
+///    fan out to [InvocationInterceptor.onAudit] (errors swallowed).
 class InvocationEngine {
   /// Creates a stateless invocation engine. Safe to share across calls.
   const InvocationEngine();
@@ -25,12 +30,15 @@ class InvocationEngine {
   /// [PolicyDecision.requireConfirmation]; otherwise the call fails with
   /// [ToolErrorCode.confirmationRequired]. When [auditLedger] is non-null,
   /// every outcome (including short-circuits) produces one audit entry.
+  /// [interceptors] run in the order supplied; see [InvocationInterceptor]
+  /// for per-hook chain semantics.
   Future<ToolResult> handle({
     required ToolCall call,
     required ToolRegistry registry,
     required PolicyEngine policyEngine,
     required bool confirmed,
     AuditLedger? auditLedger,
+    List<InvocationInterceptor> interceptors = const [],
   }) async {
     final startedAt = DateTime.now();
     final stopwatch = Stopwatch()..start();
@@ -40,13 +48,20 @@ class InvocationEngine {
       ResolvedPolicy? resolved,
     }) async {
       stopwatch.stop();
-      await auditLedger?.record(
+      final entry = await auditLedger?.record(
         call: call,
         result: result,
         resolved: resolved,
         timestamp: startedAt,
         executionDuration: stopwatch.elapsed,
       );
+      if (entry != null && interceptors.isNotEmpty) {
+        // Fan-out in parallel; swallow per-interceptor exceptions so
+        // telemetry failures can't break a successful invocation.
+        await Future.wait(
+          interceptors.map((i) => i.onAudit(entry).catchError((Object _) {})),
+        );
+      }
       return result;
     }
 
@@ -55,7 +70,14 @@ class InvocationEngine {
       return record(await registry.invoke(call));
     }
 
-    final resolved = await policyEngine.decideDetailed(call.toolName);
+    var resolved = await policyEngine.decideDetailed(call.toolName);
+    for (final interceptor in interceptors) {
+      final override = await interceptor.onResolvePolicy(
+        call.toolName,
+        resolved,
+      );
+      if (override != null) resolved = override;
+    }
 
     if (resolved.decision == PolicyDecision.deny) {
       return record(
@@ -77,9 +99,18 @@ class InvocationEngine {
       );
     }
 
-    return record(
-      await registry.invokeRegistered(tool, call),
-      resolved: resolved,
-    );
+    for (final interceptor in interceptors) {
+      final veto = await interceptor.beforeExecute(call, resolved);
+      if (veto != null) {
+        return record(veto, resolved: resolved);
+      }
+    }
+
+    var result = await registry.invokeRegistered(tool, call);
+    for (final interceptor in interceptors) {
+      final rewrite = await interceptor.afterExecute(call, result);
+      if (rewrite != null) result = rewrite;
+    }
+    return record(result, resolved: resolved);
   }
 }
